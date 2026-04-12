@@ -7,10 +7,102 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import {
   ArrowLeft, Play, Download, CheckCircle2, Circle,
   FileText, BookOpen, Clock, AlertCircle, Ban, Loader2,
+  ExternalLink,
 } from "lucide-react";
-import { courseService, type Course } from "../services/courseService";
+import { courseService, type Course, type Module } from "../services/courseService";
 import { evaluationService, type AttemptInfo } from "../services/evaluationService";
 import { toast } from "sonner";
+
+// Convierte cualquier URL de YouTube a embed
+function toEmbedUrl(url: string): string {
+  if (!url) return "";
+  // Ya es embed
+  if (url.includes("youtube.com/embed/")) return url;
+  // youtu.be/ID
+  const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
+  if (shortMatch) return `https://www.youtube.com/embed/${shortMatch[1]}`;
+  // youtube.com/watch?v=ID
+  const longMatch = url.match(/[?&]v=([a-zA-Z0-9_-]+)/);
+  if (longMatch) return `https://www.youtube.com/embed/${longMatch[1]}`;
+  return url;
+}
+
+function isYouTube(url: string): boolean {
+  return url.includes("youtube.com") || url.includes("youtu.be");
+}
+
+function isVideo(url: string): boolean {
+  return (
+    url.includes("youtube.com") ||
+    url.includes("youtu.be") ||
+    /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url)
+  );
+}
+
+function isPDF(url: string): boolean {
+  return /\.pdf(\?|$)/i.test(url);
+}
+
+// ── Reproductor de contenido ─────────────────────────────────────────────────
+function ContentPlayer({ module }: { module: Module }) {
+  const url = module.content_url;
+  if (!url) return null;
+
+  // Video de YouTube
+  if (isYouTube(url)) {
+    return (
+      <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+        <iframe
+          src={toEmbedUrl(url)}
+          className="absolute inset-0 w-full h-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          title={module.title}
+        />
+      </div>
+    );
+  }
+
+  // Video directo (mp4, webm, etc.)
+  if (isVideo(url)) {
+    return (
+      <video controls className="w-full rounded-lg" style={{ maxHeight: "400px" }}>
+        <source src={url} />
+        Tu navegador no soporta la reproducción de video.
+      </video>
+    );
+  }
+
+  // PDF
+  if (isPDF(url)) {
+    return (
+      <div className="w-full bg-gray-50 rounded-lg p-4 text-center">
+        <FileText className="w-12 h-12 text-red-500 mx-auto mb-3" />
+        <p className="text-sm text-gray-700 mb-3">Documento PDF</p>
+        <a href={url} target="_blank" rel="noopener noreferrer">
+          <Button className="bg-primary">
+            <ExternalLink className="w-4 h-4 mr-2" />
+            Abrir documento
+          </Button>
+        </a>
+      </div>
+    );
+  }
+
+  // Otro archivo o URL externa
+  return (
+    <div className="w-full bg-gray-50 rounded-lg p-4 text-center">
+      <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+      <p className="text-sm text-gray-700 mb-3">{module.title}</p>
+      <a href={url} target="_blank" rel="noopener noreferrer">
+        <Button variant="outline">
+          <ExternalLink className="w-4 h-4 mr-2" />
+          Abrir contenido
+        </Button>
+      </a>
+    </div>
+  );
+}
 
 export default function TrainingDetail() {
   const navigate = useNavigate();
@@ -26,14 +118,11 @@ export default function TrainingDetail() {
     courseService.getById(id)
       .then(async (data) => {
         setCourse(data);
-        // Si el curso tiene evaluación, cargar info de intentos
         if (data.evaluation?.id) {
           try {
             const evalData = await evaluationService.getById(data.evaluation.id);
             setAttemptInfo(evalData.attemptInfo || null);
-          } catch {
-            // Si hay error (ej: ya aprobó), ignorar
-          }
+          } catch { }
         }
       })
       .catch(() => toast.error("Error cargando el curso"))
@@ -45,7 +134,6 @@ export default function TrainingDetail() {
     setCompletingModule(moduleId);
     try {
       await courseService.completeModule(id, moduleId);
-      // Recargar curso para actualizar progreso
       const updated = await courseService.getById(id);
       setCourse(updated);
       toast.success("¡Módulo completado!");
@@ -71,9 +159,9 @@ export default function TrainingDetail() {
   const totalModules = modules.length;
   const completedModules = modules.filter((m) => m.completed).length;
   const progress = totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0;
+  const currentModule = modules[activeModule] || null;
   const thumbnailUrl = course.image_url || "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=800&h=450&fit=crop";
   const instructorInitials = course.instructor_name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "?";
-
   const canAttempt = attemptInfo?.canAttempt ?? true;
 
   return (
@@ -91,21 +179,34 @@ export default function TrainingDetail() {
       </header>
 
       <div className="max-w-md mx-auto">
-        {/* Video Player */}
-        <div className="relative aspect-video bg-gray-900">
-          <img src={thumbnailUrl} alt="Video thumbnail" className="w-full h-full object-cover opacity-60" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <button className="w-16 h-16 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors">
-              <Play className="w-8 h-8 text-primary ml-1" fill="currentColor" />
-            </button>
-          </div>
-          <div className="absolute bottom-4 left-4 right-4">
-            <Progress value={progress} className="h-1 bg-white/30" />
-          </div>
+        {/* Reproductor / Imagen */}
+        <div className="bg-gray-900 w-full">
+          {currentModule?.content_url ? (
+            <ContentPlayer module={currentModule} />
+          ) : (
+            <div className="relative aspect-video">
+              <img
+                src={thumbnailUrl}
+                alt="Portada"
+                className="w-full h-full object-cover opacity-60"
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center text-white">
+                  <Play className="w-16 h-16 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm opacity-70">
+                    {currentModule ? "Este módulo no tiene contenido" : "Selecciona un módulo"}
+                  </p>
+                </div>
+              </div>
+              <div className="absolute bottom-4 left-4 right-4">
+                <Progress value={progress} className="h-1 bg-white/30" />
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="p-4 space-y-6">
-          {/* Course Info */}
+          {/* Info del curso */}
           <div>
             <h1 className="text-2xl font-semibold text-gray-900 mb-2">{course.title}</h1>
             <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
@@ -115,8 +216,7 @@ export default function TrainingDetail() {
               </span>
               {course.duration && (
                 <span className="flex items-center gap-1">
-                  <Clock className="w-4 h-4" />
-                  {course.duration}
+                  <Clock className="w-4 h-4" />{course.duration}
                 </span>
               )}
             </div>
@@ -127,13 +227,14 @@ export default function TrainingDetail() {
           </div>
 
           {/* Tabs */}
-          <Tabs defaultValue="overview" className="w-full">
+          <Tabs defaultValue="modules" className="w-full">
             <TabsList className="w-full grid grid-cols-3 bg-gray-100">
               <TabsTrigger value="overview">Descripción</TabsTrigger>
               <TabsTrigger value="modules">Módulos</TabsTrigger>
               <TabsTrigger value="resources">Recursos</TabsTrigger>
             </TabsList>
 
+            {/* Descripción */}
             <TabsContent value="overview" className="space-y-4 mt-4">
               <Card className="p-4">
                 <h3 className="font-semibold text-gray-900 mb-2">Acerca del curso</h3>
@@ -153,6 +254,7 @@ export default function TrainingDetail() {
               </Card>
             </TabsContent>
 
+            {/* Módulos */}
             <TabsContent value="modules" className="space-y-3 mt-4">
               {modules.map((module, index) => (
                 <Card
@@ -172,6 +274,9 @@ export default function TrainingDetail() {
                         {module.duration && <span className="text-xs text-gray-500">{module.duration}</span>}
                         <span className="text-xs text-gray-400">•</span>
                         <span className="text-xs text-gray-500 capitalize">{module.type}</span>
+                        {module.content_url && (
+                          <span className="text-xs text-primary">• Contenido disponible</span>
+                        )}
                       </div>
                     </div>
                     {!module.completed ? (
@@ -182,7 +287,9 @@ export default function TrainingDetail() {
                         disabled={completingModule === module.id}
                         onClick={(e) => { e.stopPropagation(); handleCompleteModule(module.id); }}
                       >
-                        {completingModule === module.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Completar"}
+                        {completingModule === module.id
+                          ? <Loader2 className="w-3 h-3 animate-spin" />
+                          : "Completar"}
                       </Button>
                     ) : (
                       <Play className="w-5 h-5 text-gray-400" />
@@ -195,6 +302,7 @@ export default function TrainingDetail() {
               )}
             </TabsContent>
 
+            {/* Recursos */}
             <TabsContent value="resources" className="space-y-3 mt-4">
               {resources.map((resource) => (
                 <Card key={resource.id} className="p-4">
@@ -206,7 +314,10 @@ export default function TrainingDetail() {
                       <h4 className="font-medium text-gray-900 text-sm truncate">{resource.name}</h4>
                       {resource.size && <p className="text-xs text-gray-500">{(resource.size / 1024).toFixed(0)} KB</p>}
                     </div>
-                    <Button size="icon" variant="ghost" className="flex-shrink-0" onClick={() => window.open(resource.file_url, "_blank")}>
+                    <Button
+                      size="icon" variant="ghost" className="flex-shrink-0"
+                      onClick={() => window.open(resource.file_url, "_blank")}
+                    >
                       <Download className="w-5 h-5 text-primary" />
                     </Button>
                   </div>
@@ -218,9 +329,8 @@ export default function TrainingDetail() {
             </TabsContent>
           </Tabs>
 
-          {/* Action Buttons */}
+          {/* Botones de acción */}
           <div className="space-y-3 pb-6">
-            {/* Blocked alert */}
             {attemptInfo && !canAttempt && !attemptInfo.alreadyPassed && (
               <Card className="p-4 bg-red-50 border-red-200">
                 <div className="flex gap-3">
@@ -230,7 +340,7 @@ export default function TrainingDetail() {
                     <p className="text-xs text-red-700 mt-1">{attemptInfo.message}</p>
                     {attemptInfo.unlockDate && (
                       <p className="text-xs text-red-600 mt-2">
-                        Disponible nuevamente el{" "}
+                        Disponible el{" "}
                         {new Date(attemptInfo.unlockDate).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })}
                       </p>
                     )}
@@ -239,7 +349,6 @@ export default function TrainingDetail() {
               </Card>
             )}
 
-            {/* Already passed */}
             {attemptInfo?.alreadyPassed && (
               <Card className="p-4 bg-green-50 border-green-200">
                 <div className="flex gap-3">
@@ -249,32 +358,27 @@ export default function TrainingDetail() {
               </Card>
             )}
 
-            {/* Warning: last attempt */}
             {canAttempt && attemptInfo && attemptInfo.attemptsRemaining < 2 && !attemptInfo.alreadyPassed && (
               <Card className="p-4 bg-yellow-50 border-yellow-200">
                 <div className="flex gap-3">
                   <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-yellow-900">
-                      {attemptInfo.attemptsRemaining === 1 ? "¡Último intento disponible!" : `${attemptInfo.attemptsRemaining} intentos restantes`}
-                    </p>
-                    <p className="text-xs text-yellow-700 mt-1">
-                      Si no apruebas en tus {attemptInfo.attemptsRemaining} intento{attemptInfo.attemptsRemaining !== 1 ? "s" : ""}, deberás esperar {course.evaluation?.wait_days || 14} días.
-                    </p>
-                  </div>
+                  <p className="text-sm font-medium text-yellow-900">
+                    {attemptInfo.attemptsRemaining === 1 ? "¡Último intento disponible!" : `${attemptInfo.attemptsRemaining} intentos restantes`}
+                  </p>
                 </div>
               </Card>
             )}
 
             {course.evaluation && (
               <Button
-                className="w-full h-12 bg-primary hover:bg-blue-600 text-white disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
+                className="w-full h-12 bg-primary hover:bg-blue-600 text-white disabled:bg-gray-300 disabled:text-gray-500"
                 onClick={() => navigate(`/evaluation/${course.evaluation!.id}`)}
-                disabled={!canAttempt && !attemptInfo?.alreadyPassed === false}
+                disabled={!canAttempt && !attemptInfo?.alreadyPassed}
               >
                 {attemptInfo?.alreadyPassed ? "Evaluación completada" : canAttempt ? "Iniciar Evaluación" : "Evaluación no disponible"}
               </Button>
             )}
+
             <Button variant="outline" className="w-full h-12 border-gray-300" onClick={() => navigate("/dashboard")}>
               Volver al Dashboard
             </Button>

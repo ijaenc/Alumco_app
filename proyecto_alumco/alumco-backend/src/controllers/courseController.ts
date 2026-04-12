@@ -4,9 +4,9 @@ import { getDb } from "../db/database";
 import { z } from "zod";
 
 const courseSchema = z.object({
-  title: z.string().min(3),
-  description: z.string().min(10),
-  image_url: z.string().url().optional(),
+  title: z.string().min(1),
+  description: z.string().min(1),
+  image_url: z.string().optional().nullable(),
   duration: z.string().optional(),
   status: z.enum(["draft","published","archived"]).optional(),
 });
@@ -68,7 +68,7 @@ export async function getCourseById(req: Request, res: Response): Promise<void> 
       this.on("mp.module_id","=","m.id").andOn("mp.student_id","=",db.raw("?", [role === "student" ? userId : null]))
     })
     .where("m.course_id", id)
-    .select("m.*", db.raw("CASE WHEN mp.completed = 1 THEN 1 ELSE 0 END as completed"))
+    .select("m.*", db.raw("CASE WHEN mp.completed = true THEN 1 ELSE 0 END as completed"))
     .orderBy("m.order_index");
 
   const resources = await db("resources").where({ course_id: id }).orderBy("created_at","desc");
@@ -121,6 +121,26 @@ export async function deleteCourse(req: Request, res: Response): Promise<void> {
   if (!course) { res.status(404).json({ error: "Curso no encontrado" }); return; }
   if (role === "teacher" && course.instructor_id !== userId) { res.status(403).json({ error: "Sin permiso" }); return; }
 
+  // Borrar en orden para respetar foreign keys
+  await db("module_progress").whereIn("module_id",
+    db("modules").where({ course_id: id }).select("id")
+  ).delete();
+  await db("attempts").whereIn("evaluation_id",
+    db("evaluations").where({ course_id: id }).select("id")
+  ).delete();
+  await db("certificates").where({ course_id: id }).delete();
+  await db("enrollments").where({ course_id: id }).delete();
+  await db("options").whereIn("question_id",
+    db("questions").whereIn("evaluation_id",
+      db("evaluations").where({ course_id: id }).select("id")
+    ).select("id")
+  ).delete();
+  await db("questions").whereIn("evaluation_id",
+    db("evaluations").where({ course_id: id }).select("id")
+  ).delete();
+  await db("evaluations").where({ course_id: id }).delete();
+  await db("modules").where({ course_id: id }).delete();
+  await db("resources").where({ course_id: id }).delete();
   await db("courses").where({ id }).delete();
   res.json({ message: "Curso eliminado" });
 }
