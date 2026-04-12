@@ -53,13 +53,13 @@ export async function register(req: Request, res: Response): Promise<void> {
 
 export async function getProfile(req: Request, res: Response): Promise<void> {
   const db = getDb();
-  const user = await db("users").select("id","name","email","role","avatar","status","created_at").where({ id: req.user!.userId }).first();
+  const user = await db("users").select("id","name","email","role","avatar","status","sede","created_at").where({ id: req.user!.userId }).first();
   if (!user) { res.status(404).json({ error: "Usuario no encontrado" }); return; }
   res.json(user);
 }
 
 export async function updateProfile(req: Request, res: Response): Promise<void> {
-  const schema = z.object({ name: z.string().min(2).optional(), currentPassword: z.string().optional(), newPassword: z.string().min(6).optional() });
+  const schema = z.object({ name: z.string().min(2).optional(), currentPassword: z.string().optional(), newPassword: z.string().min(6).optional(), sede: z.string().optional() });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "Datos inválidos" }); return; }
 
@@ -74,6 +74,9 @@ export async function updateProfile(req: Request, res: Response): Promise<void> 
   }
   if (parsed.data.name) {
     await db("users").where({ id: req.user!.userId }).update({ name: parsed.data.name });
+  }
+  if (parsed.data.sede !== undefined) {
+    await db("users").where({ id: req.user!.userId }).update({ sede: parsed.data.sede });
   }
   res.json({ message: "Perfil actualizado" });
 }

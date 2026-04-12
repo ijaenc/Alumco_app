@@ -167,3 +167,13 @@ export async function initSchema(): Promise<void> {
 }
 
 export default getDb;
+
+// Run this migration to add sede field
+export async function runMigrations(): Promise<void> {
+  const db = getDb();
+  const hasSede = await db.schema.hasColumn("users", "sede");
+  if (!hasSede) {
+    await db.schema.alterTable("users", t => { t.string("sede").nullable(); });
+    console.log("✅ Migración: campo 'sede' agregado a users");
+  }
+}

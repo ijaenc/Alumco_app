@@ -20,7 +20,7 @@ import {
 } from "../controllers/messageController";
 import {
   getDashboardStats, getCourseStats, getAllStudents, getStudentProgress,
-  getAllUsers, createUser, updateUserStatus, getEvaluationStats,
+  getAllUsers, createUser, updateUserStatus, updateUserSede, getEvaluationStats,
 } from "../controllers/adminController";
 
 const router = Router();
@@ -101,6 +101,7 @@ router.get("/admin/evaluation-stats", authenticate, requireRole("admin"), getEva
 router.get("/admin/users", authenticate, requireRole("admin"), getAllUsers);
 router.post("/admin/users", authenticate, requireRole("admin"), createUser);
 router.patch("/admin/users/:id/status", authenticate, requireRole("admin"), updateUserStatus);
+router.patch("/admin/users/:id/sede", authenticate, requireRole("admin"), updateUserSede);
 
 // Students
 router.get("/admin/students", authenticate, requireRole("admin", "teacher"), getAllStudents);

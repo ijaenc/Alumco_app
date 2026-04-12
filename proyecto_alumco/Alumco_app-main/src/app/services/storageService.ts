@@ -47,6 +47,7 @@ export async function uploadFile(
     });
 
     xhr.addEventListener("load", () => {
+      console.log("Storage response:", xhr.status, xhr.responseText);
       if (xhr.status === 200 || xhr.status === 201) {
         const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}`;
         resolve({
@@ -59,9 +60,9 @@ export async function uploadFile(
       } else {
         try {
           const err = JSON.parse(xhr.responseText);
-          reject(new Error(err.message || "Error al subir el archivo"));
+          reject(new Error(err.error || err.message || `Error ${xhr.status} al subir`));
         } catch {
-          reject(new Error(`Error ${xhr.status} al subir el archivo`));
+          reject(new Error(`Error ${xhr.status}: ${xhr.responseText}`));
         }
       }
     });
@@ -69,8 +70,9 @@ export async function uploadFile(
     xhr.addEventListener("error", () => reject(new Error("Error de red al subir el archivo")));
     xhr.addEventListener("abort", () => reject(new Error("Subida cancelada")));
 
-    xhr.open("POST", url);
+    xhr.open("PUT", url);
     xhr.setRequestHeader("Authorization", `Bearer ${SUPABASE_ANON_KEY}`);
+    xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
     xhr.setRequestHeader("x-upsert", "true");
     xhr.send(file);
   });

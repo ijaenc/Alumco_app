@@ -89,12 +89,17 @@ export default function AdminDashboard() {
             {statCards.map((stat, index) => {
               const colors = getColorClasses(stat.color);
               const Icon = stat.icon;
+              const route = stat.label === "Estudiantes Activos" ? "/admin/students"
+                : stat.label === "Certificados" ? "/admin/certifications"
+                : null;
               return (
-                <Card key={index} className="p-4">
+                <Card key={index} className={`p-4 ${route ? "cursor-pointer hover:shadow-md transition-shadow" : ""}`}
+                  onClick={() => route && navigate(route)}>
                   <div className="flex items-start justify-between mb-3">
                     <div className={`w-10 h-10 ${colors.bg} rounded-lg flex items-center justify-center`}>
                       <Icon className={`w-5 h-5 ${colors.icon}`} />
                     </div>
+                    {route && <span className="text-xs text-primary">Ver →</span>}
                   </div>
                   <p className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</p>
                   <p className="text-xs text-gray-600">{stat.label}</p>

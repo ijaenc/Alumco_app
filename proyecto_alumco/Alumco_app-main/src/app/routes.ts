@@ -13,62 +13,22 @@ import NewMessage from "./pages/NewMessage";
 import Certificates from "./pages/Certificates";
 import AdminMessages from "./pages/AdminMessages";
 import AdminCertifications from "./pages/AdminCertifications";
+import AdminStudents from "./pages/AdminStudents";
 
 export const router = createBrowserRouter([
-  {
-    path: "/",
-    Component: Login,
-  },
-  {
-    path: "/dashboard",
-    Component: UserDashboard,
-  },
-  {
-    path: "/training/:id",
-    Component: TrainingDetail,
-  },
-  {
-    path: "/evaluation/:id",
-    Component: Evaluation,
-  },
-  {
-    path: "/results/:id",
-    Component: Results,
-  },
-  {
-    path: "/messages",
-    Component: Messages,
-  },
-  {
-    path: "/chat/:id",
-    Component: Chat,
-  },
-  {
-    path: "/messages/new",
-    Component: NewMessage,
-  },
-  {
-    path: "/certificates",
-    Component: Certificates,
-  },
-  {
-    path: "/admin",
-    Component: AdminDashboard,
-  },
-  {
-    path: "/admin/panel",
-    Component: AdminPanel,
-  },
-  {
-    path: "/admin/reports",
-    Component: Reports,
-  },
-  {
-    path: "/admin/messages",
-    Component: AdminMessages,
-  },
-  {
-    path: "/admin/certifications",
-    Component: AdminCertifications,
-  },
+  { path: "/", Component: Login },
+  { path: "/dashboard", Component: UserDashboard },
+  { path: "/training/:id", Component: TrainingDetail },
+  { path: "/evaluation/:id", Component: Evaluation },
+  { path: "/results/:id", Component: Results },
+  { path: "/messages", Component: Messages },
+  { path: "/chat/:id", Component: Chat },
+  { path: "/messages/new", Component: NewMessage },
+  { path: "/certificates", Component: Certificates },
+  { path: "/admin", Component: AdminDashboard },
+  { path: "/admin/panel", Component: AdminPanel },
+  { path: "/admin/reports", Component: Reports },
+  { path: "/admin/messages", Component: AdminMessages },
+  { path: "/admin/certifications", Component: AdminCertifications },
+  { path: "/admin/students", Component: AdminStudents },
 ]);

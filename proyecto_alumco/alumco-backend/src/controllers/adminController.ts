@@ -67,10 +67,10 @@ export async function getStudentProgress(req: Request, res: Response): Promise<v
     const totalMods = ((await db("modules").where({ course_id: en.course_id }).count("id as c").first()) as any).c;
     const completedMods = ((await db("module_progress as mp").join("modules as m","mp.module_id","m.id")
       .where({ "m.course_id": en.course_id, "mp.student_id": id, "mp.completed": true }).count("mp.id as c").first()) as any).c;
-    const bestAttempt = await db("attempts as a").join("evaluations as e","e.id","a.evaluation_id")
-      .where({ "e.course_id": en.course_id, "a.student_id": id, "a.passed": true }).orderBy("a.score","desc").first();
-    const attemptCount = ((await db("attempts as a").join("evaluations as e","e.id","a.evaluation_id")
-      .where({ "e.course_id": en.course_id, "a.student_id": id }).count("a.id as c").first()) as any).c;
+    const bestAttempt = await db("attempts as at").join("evaluations as ev2","ev2.id","at.evaluation_id")
+      .where({ "ev2.course_id": en.course_id, "at.student_id": id, "at.passed": true }).orderBy("at.score","desc").first();
+    const attemptCount = ((await db("attempts as at2").join("evaluations as ev3","ev3.id","at2.evaluation_id")
+      .where({ "ev3.course_id": en.course_id, "at2.student_id": id }).count("at2.id as c").first()) as any).c;
     const cert = await db("certificates").where({ student_id: id, course_id: en.course_id }).first();
     return { ...en, total_modules: totalMods, completed_modules: completedMods, best_score: bestAttempt?.score||null, attempt_count: attemptCount, certificate_number: cert?.certificate_number||null };
   }));
@@ -95,11 +95,11 @@ export async function getEvaluationStats(req: Request, res: Response): Promise<v
 
 export async function getAllUsers(req: Request, res: Response): Promise<void> {
   const db = getDb();
-  res.json(await db("users").select("id","name","email","role","status","created_at").orderBy("created_at","desc"));
+  res.json(await db("users").select("id","name","email","role","status","sede","created_at").orderBy("created_at","desc"));
 }
 
 export async function createUser(req: Request, res: Response): Promise<void> {
-  const schema = z.object({ name: z.string().min(2), email: z.string().email(), password: z.string().min(6), role: z.enum(["student","teacher","admin"]) });
+  const schema = z.object({ name: z.string().min(2), email: z.string().email(), password: z.string().min(6), role: z.enum(["student","teacher","admin"]), sede: z.string().optional() });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: "Datos inválidos" }); return; }
 
@@ -109,8 +109,18 @@ export async function createUser(req: Request, res: Response): Promise<void> {
 
   const hash = await bcrypt.hash(parsed.data.password, 10);
   const id = uuidv4();
-  await db("users").insert({ id, name: parsed.data.name, email: parsed.data.email, password: hash, role: parsed.data.role });
+  await db("users").insert({ id, name: parsed.data.name, email: parsed.data.email, password: hash, role: parsed.data.role, sede: parsed.data.sede || null });
   res.status(201).json({ id, name: parsed.data.name, email: parsed.data.email, role: parsed.data.role });
+}
+
+export async function updateUserSede(req: Request, res: Response): Promise<void> {
+  const db = getDb();
+  const { id } = req.params;
+  const schema = z.object({ sede: z.string().nullable() });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: "Datos inválidos" }); return; }
+  await db("users").where({ id }).update({ sede: parsed.data.sede });
+  res.json({ message: "Sede actualizada" });
 }
 
 export async function updateUserStatus(req: Request, res: Response): Promise<void> {

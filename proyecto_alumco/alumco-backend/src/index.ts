@@ -3,7 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
 import routes from "./routes";
-import { initSchema } from "./db/database";
+import { initSchema, runMigrations } from "./db/database";
 
 dotenv.config();
 
@@ -23,7 +23,7 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
   res.status(500).json({ error: "Error interno del servidor" });
 });
 
-initSchema().then(() => {
+initSchema().then(() => runMigrations()).then(() => {
   app.listen(PORT, () => {
     console.log(`\n🚀 Alumco Backend corriendo en http://localhost:${PORT}`);
     console.log(`📚 API disponible en http://localhost:${PORT}/api`);

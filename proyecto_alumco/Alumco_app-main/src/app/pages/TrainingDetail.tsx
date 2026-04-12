@@ -43,10 +43,28 @@ function isPDF(url: string): boolean {
   return /\.pdf(\?|$)/i.test(url);
 }
 
+function isImage(url: string): boolean {
+  return /\.(jpg|jpeg|png|webp|gif|svg)(\?|$)/i.test(url) ||
+    url.includes("/storage/v1/object/public/alumco-files/images/");
+}
+
 // ── Reproductor de contenido ─────────────────────────────────────────────────
 function ContentPlayer({ module }: { module: Module }) {
   const url = module.content_url;
   if (!url) return null;
+
+  // Imagen — detectar por tipo del módulo primero
+  if (module.type === "image" || isImage(url)) {
+    return (
+      <div className="w-full bg-gray-900 flex items-center justify-center p-4" style={{ minHeight: "200px" }}>
+        <img
+          src={url}
+          alt={module.title}
+          className="max-w-full max-h-96 object-contain rounded-lg"
+        />
+      </div>
+    );
+  }
 
   // Video de YouTube
   if (isYouTube(url)) {
@@ -162,7 +180,8 @@ export default function TrainingDetail() {
   const currentModule = modules[activeModule] || null;
   const thumbnailUrl = course.image_url || "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=800&h=450&fit=crop";
   const instructorInitials = course.instructor_name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "?";
-  const canAttempt = attemptInfo?.canAttempt ?? true;
+  const allModulesCompleted = totalModules === 0 || completedModules === totalModules;
+  const canAttempt = (attemptInfo?.canAttempt ?? true) && allModulesCompleted;
 
   return (
     <div className="min-h-screen bg-background">
@@ -369,13 +388,33 @@ export default function TrainingDetail() {
               </Card>
             )}
 
+            {course.evaluation && !allModulesCompleted && !attemptInfo?.alreadyPassed && (
+              <Card className="p-4 bg-yellow-50 border-yellow-200">
+                <div className="flex gap-3">
+                  <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-yellow-900">Completa todos los módulos primero</p>
+                    <p className="text-xs text-yellow-700 mt-1">
+                      Te faltan {totalModules - completedModules} módulo{totalModules - completedModules !== 1 ? "s" : ""} por completar antes de poder rendir la evaluación.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            )}
+
             {course.evaluation && (
               <Button
                 className="w-full h-12 bg-primary hover:bg-blue-600 text-white disabled:bg-gray-300 disabled:text-gray-500"
                 onClick={() => navigate(`/evaluation/${course.evaluation!.id}`)}
                 disabled={!canAttempt && !attemptInfo?.alreadyPassed}
               >
-                {attemptInfo?.alreadyPassed ? "Evaluación completada" : canAttempt ? "Iniciar Evaluación" : "Evaluación no disponible"}
+                {attemptInfo?.alreadyPassed
+                  ? "Evaluación completada"
+                  : !allModulesCompleted
+                  ? `Completa los módulos (${completedModules}/${totalModules})`
+                  : canAttempt
+                  ? "Iniciar Evaluación"
+                  : "Evaluación no disponible"}
               </Button>
             )}
 

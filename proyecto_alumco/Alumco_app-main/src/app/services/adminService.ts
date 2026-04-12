@@ -1,6 +1,3 @@
-// ─────────────────────────────────────────────────────────
-// adminService.ts — estadísticas y gestión de usuarios
-// ─────────────────────────────────────────────────────────
 import { api } from "./api";
 
 export interface DashboardStats {
@@ -38,6 +35,7 @@ export interface StudentSummary {
   name: string;
   email: string;
   status: string;
+  sede?: string;
   created_at: string;
   total_enrollments: number;
   total_certificates: number;
@@ -52,38 +50,21 @@ export interface AdminUser {
   email: string;
   role: "student" | "teacher" | "admin";
   status: "active" | "inactive";
+  sede?: string;
   created_at: string;
 }
 
 export const adminService = {
-  // GET /admin/stats
   getDashboardStats: () => api.get<DashboardStats>("/admin/stats"),
-
-  // GET /admin/courses/stats
   getCourseStats: () => api.get<CourseStats[]>("/admin/courses/stats"),
-
-  // GET /admin/evaluation-stats
   getEvaluationStats: () => api.get<any[]>("/admin/evaluation-stats"),
-
-  // GET /admin/students
   getStudents: () => api.get<StudentSummary[]>("/admin/students"),
-
-  // GET /admin/students/:id/progress
-  getStudentProgress: (id: string) =>
-    api.get<{ student: any; enrollments: any[] }>(`/admin/students/${id}/progress`),
-
-  // GET /admin/users
+  getStudentProgress: (id: string) => api.get<{ student: any; enrollments: any[] }>(`/admin/students/${id}/progress`),
   getUsers: () => api.get<AdminUser[]>("/admin/users"),
-
-  // POST /admin/users
-  createUser: (data: {
-    name: string;
-    email: string;
-    password: string;
-    role: "student" | "teacher" | "admin";
-  }) => api.post<AdminUser>("/admin/users", data),
-
-  // PATCH /admin/users/:id/status
+  createUser: (data: { name: string; email: string; password: string; role: "student" | "teacher" | "admin"; sede?: string }) =>
+    api.post<AdminUser>("/admin/users", data),
   updateUserStatus: (id: string, status: "active" | "inactive") =>
     api.patch(`/admin/users/${id}/status`, { status }),
+  updateUserSede: (id: string, sede: string | null) =>
+    api.patch(`/admin/users/${id}/sede`, { sede }),
 };
