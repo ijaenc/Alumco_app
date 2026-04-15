@@ -12,7 +12,6 @@ import { useAuth } from "../context/AuthContext";
 import { courseService, type Course } from "../services/courseService";
 import { certificateService, type Certificate } from "../services/certificateService";
 import { messageService } from "../services/messageService";
-import { toast } from "sonner";
 
 export default function UserDashboard() {
   const navigate = useNavigate();
@@ -34,8 +33,8 @@ export default function UserDashboard() {
         setCourses(coursesData);
         setCertificates(certsData);
         setUnreadCount(unreadData.count);
-      } catch {
-        toast.error("Error cargando los datos");
+      } catch (err) {
+        console.error("No se pudieron cargar los datos del dashboard", err);
       } finally {
         setLoading(false);
       }
@@ -59,7 +58,7 @@ export default function UserDashboard() {
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-white border-b border-gray-200">
-        <div className="max-w-md mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
               <Logo className="text-white" size={24} />
@@ -75,8 +74,7 @@ export default function UserDashboard() {
         </div>
       </header>
 
-      <div className="max-w-md mx-auto p-4 space-y-6">
-        {/* Welcome Card */}
+      <div className="max-w-[1400px] mx-auto px-6 lg:px-10 py-6 space-y-6">
         <Card className="bg-gradient-to-br from-blue-500 to-blue-600 border-0 p-6 text-white">
           <div className="flex items-start justify-between">
             <div>
@@ -97,8 +95,7 @@ export default function UserDashboard() {
           </div>
         </Card>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <Card className="p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/messages")}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center relative">
@@ -128,7 +125,6 @@ export default function UserDashboard() {
           </Card>
         </div>
 
-        {/* My Courses */}
         <div>
           <h3 className="font-semibold text-gray-900 mb-4">Mis Capacitaciones</h3>
           {courses.length === 0 ? (
@@ -137,7 +133,7 @@ export default function UserDashboard() {
               <p>No tienes cursos asignados aún</p>
             </Card>
           ) : (
-            <div className="space-y-3">
+            <div className="grid gap-3 xl:grid-cols-2">
               {courses.map((course) => {
                 const total = course.total_modules || 0;
                 const completed = course.completed_modules || 0;
@@ -177,7 +173,6 @@ export default function UserDashboard() {
           )}
         </div>
 
-        {/* Certificates */}
         {certificates.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -186,7 +181,7 @@ export default function UserDashboard() {
                 Ver todos
               </Button>
             </div>
-            <div className="space-y-3">
+            <div className="grid gap-3 xl:grid-cols-2">
               {certificates.slice(0, 2).map((cert) => (
                 <Card key={cert.id} className="p-4 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/certificates")}>
                   <div className="flex items-center gap-3">

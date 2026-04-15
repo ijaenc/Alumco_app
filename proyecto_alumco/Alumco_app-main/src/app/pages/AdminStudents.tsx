@@ -175,7 +175,7 @@ export default function AdminStudents() {
   useEffect(() => {
     adminService.getStudents()
       .then(setStudents)
-      .catch(() => toast.error("Error cargando estudiantes"))
+      .catch((err) => console.error("No se pudieron cargar los estudiantes", err))
       .finally(() => setLoading(false));
   }, []);
 
@@ -186,8 +186,9 @@ export default function AdminStudents() {
     try {
       const data = await adminService.getStudentProgress(student.id);
       setProgress(data);
-    } catch {
-      toast.error("Error cargando progreso");
+    } catch (err) {
+      console.error("No se pudo cargar el progreso del estudiante", err);
+      setProgress(null);
     } finally { setLoadingProgress(false); }
   };
 
@@ -402,3 +403,4 @@ export default function AdminStudents() {
     </div>
   );
 }
+

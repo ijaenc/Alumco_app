@@ -25,7 +25,7 @@ export default function Login() {
       if (user.role === "admin") {
         navigate("/admin");
       } else if (user.role === "teacher") {
-        navigate("/admin/panel");
+        navigate("/admin");
       } else {
         navigate("/dashboard");
       }

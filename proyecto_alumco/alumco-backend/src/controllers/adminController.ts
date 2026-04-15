@@ -23,7 +23,16 @@ export async function getDashboardStats(req: Request, res: Response): Promise<vo
 
 export async function getCourseStats(req: Request, res: Response): Promise<void> {
   const db = getDb();
-  const courses = await db("courses as c").join("users as u","u.id","c.instructor_id").select("c.*","u.name as instructor_name");
+  const { role, userId } = req.user!;
+  const coursesQuery = db("courses as c")
+    .join("users as u", "u.id", "c.instructor_id")
+    .select("c.*", "u.name as instructor_name");
+
+  if (role === "teacher") {
+    coursesQuery.where("c.instructor_id", userId);
+  }
+
+  const courses = await coursesQuery;
 
   const stats = await Promise.all(courses.map(async (course: any) => {
     const enrolled = ((await db("enrollments").where({ course_id: course.id }).count("id as c").first()) as any).c;
@@ -33,7 +42,15 @@ export async function getCourseStats(req: Request, res: Response): Promise<void>
     const passedAttempts = attemptRows.filter((a:any) => a.passed).length;
     const avgScore = totalAttempts > 0 ? attemptRows.reduce((s:number,a:any)=>s+a.score,0)/totalAttempts : 0;
     const certs = ((await db("certificates").where({ course_id: course.id }).count("id as c").first()) as any).c;
-    return { ...course, enrolled_students: enrolled, total_modules: totalModules, total_attempts: totalAttempts, passed_attempts: passedAttempts, average_score: Math.round(avgScore*10)/10, certificates_issued: certs };
+    return {
+      ...course,
+      enrolled_students: Number(enrolled),
+      total_modules: Number(totalModules),
+      total_attempts: Number(totalAttempts),
+      passed_attempts: Number(passedAttempts),
+      average_score: Math.round(avgScore * 10) / 10,
+      certificates_issued: Number(certs),
+    };
   }));
 
   res.json(stats.sort((a:any,b:any) => b.enrolled_students - a.enrolled_students));

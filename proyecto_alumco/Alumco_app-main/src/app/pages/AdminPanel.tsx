@@ -188,7 +188,7 @@ function EditCourseModal({ course, onClose, onSaved }: { course: Course; onClose
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bg-white rounded-2xl w-full max-w-lg flex flex-col" style={{ maxHeight: "90vh" }}>
+      <div className="bg-white rounded-2xl w-full max-w-4xl flex flex-col" style={{ maxHeight: "90vh" }}>
         <div className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-2xl flex-shrink-0">
           <h3 className="font-semibold text-gray-900">Editar: {course.title}</h3>
           <Button size="icon" variant="ghost" onClick={onClose}><X className="w-5 h-5" /></Button>
@@ -401,7 +401,7 @@ export default function AdminPanel() {
   useEffect(() => {
     Promise.all([courseService.getAll(), adminService.getStudents()])
       .then(([c, s]) => { setCourses(c); setStudents(s); })
-      .catch(() => toast.error("Error cargando datos"))
+      .catch((err) => console.error("No se pudieron cargar los datos del panel", err))
       .finally(() => setLoading(false));
   }, []);
 
@@ -486,11 +486,11 @@ export default function AdminPanel() {
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
+        <div className="max-w-[1400px] mx-auto w-full px-6 lg:px-10 py-4 flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate("/admin")} className="text-gray-600"><ArrowLeft className="w-5 h-5" /></Button>
           <div className="flex-1">
-            <h2 className="font-semibold text-gray-900">Panel de Control</h2>
-            <p className="text-xs text-gray-500">Gestión completa de la plataforma</p>
+            <h2 className="text-xl font-semibold text-gray-900">Panel de Control</h2>
+            <p className="text-sm text-gray-500">Gestión completa de la plataforma</p>
           </div>
         </div>
       </header>
@@ -503,9 +503,9 @@ export default function AdminPanel() {
         />
       )}
 
-      <div className="max-w-2xl mx-auto p-4">
+      <div className="max-w-[1400px] mx-auto w-full px-6 lg:px-10 py-6 flex items-center gap-3">
         <Tabs defaultValue="content" className="w-full">
-          <TabsList className="w-full grid grid-cols-3 bg-gray-100 mb-6">
+          <TabsList className="w-full grid grid-cols-1 md:grid-cols-3 bg-gray-100 mb-6 gap-2">
             <TabsTrigger value="content" className="text-xs">Cursos</TabsTrigger>
             <TabsTrigger value="assign" className="text-xs">Asignar</TabsTrigger>
             <TabsTrigger value="users" className="text-xs">Usuarios</TabsTrigger>
@@ -513,7 +513,8 @@ export default function AdminPanel() {
 
           {/* CURSOS */}
           <TabsContent value="content" className="space-y-6">
-            <Card className="p-6">
+            <div className="grid gap-6 xl:grid-cols-12 items-start">
+            <Card className="p-6 xl:col-span-7 2xl:col-span-8">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center"><BookOpen className="w-5 h-5 text-primary" /></div>
                 <div><h3 className="font-semibold text-gray-900">Crear Nuevo Curso</h3><p className="text-xs text-gray-500">Completa la información del curso</p></div>
@@ -612,7 +613,7 @@ export default function AdminPanel() {
             </Card>
 
             {/* Lista cursos */}
-            <div>
+            <div className="xl:col-span-5 2xl:col-span-4">
               <h3 className="font-semibold text-gray-900 mb-4">Cursos Existentes ({courses.length})</h3>
               <div className="space-y-3">
                 {courses.map(course => (
@@ -638,6 +639,7 @@ export default function AdminPanel() {
                 ))}
                 {courses.length === 0 && (<div className="text-center py-8 text-gray-500"><BookOpen className="w-10 h-10 mx-auto mb-2 opacity-30" /><p>No hay cursos creados aún</p></div>)}
               </div>
+            </div>
             </div>
           </TabsContent>
 
@@ -681,3 +683,4 @@ export default function AdminPanel() {
     </div>
   );
 }
+

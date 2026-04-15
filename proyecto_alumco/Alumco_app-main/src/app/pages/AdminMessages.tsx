@@ -31,7 +31,7 @@ export default function AdminMessages() {
     ]).then(([convs, users]) => {
       setConversations(convs);
       setAllUsers(users);
-    }).catch(() => toast.error("Error cargando datos"))
+    }).catch((err) => console.error("No se pudieron cargar los datos de mensajería", err))
       .finally(() => setLoading(false));
   }, []);
 
@@ -271,3 +271,4 @@ export default function AdminMessages() {
     </div>
   );
 }
+

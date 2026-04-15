@@ -27,7 +27,7 @@ export default function AdminCertifications() {
     ]).then(([certs, studs]) => {
       setCertificates(certs);
       setStudents(studs);
-    }).catch(() => toast.error("Error cargando datos"))
+    }).catch((err) => console.error("No se pudieron cargar los datos de certificaciones", err))
       .finally(() => setLoading(false));
   }, []);
 
@@ -232,3 +232,4 @@ export default function AdminCertifications() {
     </div>
   );
 }
+
