@@ -7,21 +7,21 @@ import { Label } from "../components/ui/label";
 import {
   ArrowLeft, Search, Users, BookOpen, Award,
   TrendingUp, Loader2, X, Save, MapPin, UserPlus,
-  Eye, EyeOff, GraduationCap, School,
+  Eye, EyeOff, GraduationCap
 } from "lucide-react";
 import { adminService, type StudentSummary } from "../services/adminService";
 import { api } from "../services/api";
 import { toast } from "sonner";
 
-// ── Modal para crear usuario ──────────────────────────────────────────────────
-function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: (user: any) => void }) {
+// ── Modal para crear ESTUDIANTE ──────────────────────────────────────────────────
+function CreateStudentModal({ onClose, onCreated }: { onClose: () => void; onCreated: (user: any) => void }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState<"student" | "teacher">("student");
   const [sede, setSede] = useState("");
   const [saving, setSaving] = useState(false);
+  const role = "student"; // Fijo como estudiante
 
   const handleCreate = async () => {
     if (!name.trim() || !email.trim() || !password.trim()) {
@@ -35,11 +35,11 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
       const newUser = await adminService.createUser({
         name, email, password, role, sede: sede || undefined,
       });
-      toast.success(`${role === "student" ? "Estudiante" : "Profesor"} "${name}" creado exitosamente`);
+      toast.success(`Estudiante "${name}" creado exitosamente`);
       onCreated(newUser);
       onClose();
     } catch (err: any) {
-      toast.error(err.message || "Error al crear el usuario");
+      toast.error(err.message || "Error al crear el estudiante");
     } finally { setSaving(false); }
   };
 
@@ -51,68 +51,27 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
         <div className="border-b border-gray-100 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <UserPlus className="w-5 h-5 text-primary" />
+              <GraduationCap className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">Agregar Usuario</h3>
-              <p className="text-xs text-gray-500">Crea un estudiante o profesor</p>
+              <h3 className="font-semibold text-gray-900">Agregar Estudiante</h3>
+              <p className="text-xs text-gray-500">Crea un nuevo alumno para la plataforma</p>
             </div>
           </div>
           <Button size="icon" variant="ghost" onClick={onClose}><X className="w-5 h-5" /></Button>
         </div>
 
         <div className="p-6 space-y-4">
-          {/* Tipo de usuario */}
-          <div className="space-y-2">
-            <Label>Tipo de usuario</Label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setRole("student")}
-                className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${role === "student" ? "border-primary bg-blue-50" : "border-gray-200 hover:border-gray-300"}`}
-              >
-                <GraduationCap className={`w-5 h-5 ${role === "student" ? "text-primary" : "text-gray-400"}`} />
-                <div className="text-left">
-                  <p className={`text-sm font-medium ${role === "student" ? "text-primary" : "text-gray-700"}`}>Estudiante</p>
-                  <p className="text-xs text-gray-500">Acceso a cursos</p>
-                </div>
-              </button>
-              <button
-                onClick={() => setRole("teacher")}
-                className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${role === "teacher" ? "border-primary bg-blue-50" : "border-gray-200 hover:border-gray-300"}`}
-              >
-                <School className={`w-5 h-5 ${role === "teacher" ? "text-primary" : "text-gray-400"}`} />
-                <div className="text-left">
-                  <p className={`text-sm font-medium ${role === "teacher" ? "text-primary" : "text-gray-700"}`}>Profesor</p>
-                  <p className="text-xs text-gray-500">Gestión de cursos</p>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          {/* Nombre */}
           <div className="space-y-2">
             <Label>Nombre completo <span className="text-red-500">*</span></Label>
-            <Input
-              placeholder="Ej: María González"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              className="bg-gray-50"
-            />
+            <Input placeholder="Ej: María González" value={name} onChange={e => setName(e.target.value)} className="bg-gray-50" />
           </div>
 
-          {/* Email */}
           <div className="space-y-2">
             <Label>Correo electrónico <span className="text-red-500">*</span></Label>
-            <Input
-              type="email"
-              placeholder="correo@ejemplo.com"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              className="bg-gray-50"
-            />
+            <Input type="email" placeholder="correo@ejemplo.com" value={email} onChange={e => setEmail(e.target.value)} className="bg-gray-50" />
           </div>
 
-          {/* Contraseña */}
           <div className="space-y-2">
             <Label>Contraseña <span className="text-red-500">*</span></Label>
             <div className="relative">
@@ -133,23 +92,16 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
             </div>
           </div>
 
-          {/* Sede */}
           <div className="space-y-2">
             <Label><MapPin className="w-3 h-3 inline mr-1" />Sede <span className="text-gray-400 text-xs font-normal">(opcional)</span></Label>
-            <Input
-              placeholder="Ej: Sede Central, Sucursal Norte..."
-              value={sede}
-              onChange={e => setSede(e.target.value)}
-              className="bg-gray-50"
-            />
+            <Input placeholder="Ej: Patahual" value={sede} onChange={e => setSede(e.target.value)} className="bg-gray-50" />
           </div>
 
-          {/* Botones */}
           <div className="flex gap-3 pt-2">
             <Button variant="outline" className="flex-1" onClick={onClose}>Cancelar</Button>
             <Button className="flex-1 bg-primary hover:bg-blue-600" onClick={handleCreate} disabled={saving}>
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UserPlus className="w-4 h-4 mr-2" />}
-              {saving ? "Creando..." : `Crear ${role === "student" ? "estudiante" : "profesor"}`}
+              {saving ? "Creando..." : "Crear estudiante"}
             </Button>
           </div>
         </div>
@@ -158,7 +110,7 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
   );
 }
 
-// ── Página principal ──────────────────────────────────────────────────────────
+// ── Página principal de Estudiantes ──────────────────────────────────────────────
 export default function AdminStudents() {
   const navigate = useNavigate();
   const [students, setStudents] = useState<StudentSummary[]>([]);
@@ -206,10 +158,7 @@ export default function AdminStudents() {
   };
 
   const handleUserCreated = (newUser: any) => {
-    if (newUser.role === "student") {
-      setStudents(prev => [{ ...newUser, total_enrollments: 0, total_certificates: 0, total_attempts: 0, average_score: 0, last_activity: newUser.created_at }, ...prev]);
-    }
-    // Teachers won't appear in this list but are created successfully
+    setStudents(prev => [{ ...newUser, total_enrollments: 0, total_certificates: 0, total_attempts: 0, average_score: 0, last_activity: newUser.created_at }, ...prev]);
   };
 
   const filtered = students.filter(s =>
@@ -218,54 +167,33 @@ export default function AdminStudents() {
     ((s as any).sede || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const getInitials = (name: string) =>
-    name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+  const getInitials = (name: string) => name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+  const getScoreColor = (score: number) => score >= 90 ? "text-green-600" : score >= 70 ? "text-blue-600" : "text-red-600";
 
-  const getScoreColor = (score: number) => {
-    if (score >= 90) return "text-green-600";
-    if (score >= 70) return "text-blue-600";
-    return "text-red-600";
-  };
-
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
-  }
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
 
   return (
     <div className="min-h-screen bg-background">
-      {showCreateModal && (
-        <CreateUserModal
-          onClose={() => setShowCreateModal(false)}
-          onCreated={handleUserCreated}
-        />
-      )}
+      {showCreateModal && <CreateStudentModal onClose={() => setShowCreateModal(false)} onCreated={handleUserCreated} />}
 
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-4">
           <div className="flex items-center gap-3 mb-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/admin")} className="text-gray-600">
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="text-gray-600">
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div className="flex-1">
-              <h1 className="text-xl font-semibold text-gray-900">Usuarios</h1>
+              <h1 className="text-xl font-semibold text-gray-900">Usuarios (Estudiantes)</h1>
               <p className="text-xs text-gray-500">{students.length} estudiantes registrados</p>
             </div>
-            <Button
-              className="bg-primary hover:bg-blue-600 h-9"
-              onClick={() => setShowCreateModal(true)}
-            >
+            <Button className="bg-primary hover:bg-blue-600 h-9" onClick={() => setShowCreateModal(true)}>
               <UserPlus className="w-4 h-4 mr-2" />
               Agregar
             </Button>
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
-              placeholder="Buscar por nombre, email o sede..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="pl-10 bg-gray-50"
-            />
+            <Input placeholder="Buscar por nombre, email o sede..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10 bg-gray-50" />
           </div>
         </div>
       </header>
@@ -289,63 +217,31 @@ export default function AdminStudents() {
                   </span>
                 </div>
 
-                {/* Sede editable */}
                 <div className="flex items-center gap-2 mt-2">
                   <MapPin className="w-3 h-3 text-gray-400 flex-shrink-0" />
                   {editingSede === student.id ? (
                     <div className="flex items-center gap-2 flex-1">
-                      <Input
-                        value={sedeValue}
-                        onChange={e => setSedeValue(e.target.value)}
-                        placeholder="Nombre de la sede"
-                        className="h-7 text-xs flex-1"
-                        onKeyDown={e => { if (e.key === "Enter") handleSaveSede(student.id); if (e.key === "Escape") setEditingSede(null); }}
-                        autoFocus
-                      />
-                      <Button size="icon" className="h-7 w-7 bg-primary" disabled={savingSede} onClick={() => handleSaveSede(student.id)}>
-                        {savingSede ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
-                      </Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingSede(null)}>
-                        <X className="w-3 h-3" />
-                      </Button>
+                      <Input value={sedeValue} onChange={e => setSedeValue(e.target.value)} placeholder="Nombre de la sede" className="h-7 text-xs flex-1" onKeyDown={e => { if (e.key === "Enter") handleSaveSede(student.id); if (e.key === "Escape") setEditingSede(null); }} autoFocus />
+                      <Button size="icon" className="h-7 w-7 bg-primary" disabled={savingSede} onClick={() => handleSaveSede(student.id)}>{savingSede ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}</Button>
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingSede(null)}><X className="w-3 h-3" /></Button>
                     </div>
                   ) : (
-                    <button
-                      className="text-xs text-gray-500 hover:text-primary transition-colors text-left"
-                      onClick={() => { setEditingSede(student.id); setSedeValue((student as any).sede || ""); }}
-                    >
+                    <button className="text-xs text-gray-500 hover:text-primary transition-colors text-left" onClick={() => { setEditingSede(student.id); setSedeValue((student as any).sede || ""); }}>
                       {(student as any).sede || <span className="text-gray-400 italic">Sin sede — clic para editar</span>}
                     </button>
                   )}
                 </div>
 
-                {/* Stats */}
                 <div className="flex items-center gap-4 mt-3">
-                  <div className="flex items-center gap-1 text-xs text-gray-600">
-                    <BookOpen className="w-3 h-3" />
-                    <span>{student.total_enrollments} cursos</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs text-gray-600">
-                    <Award className="w-3 h-3" />
-                    <span>{student.total_certificates} certificados</span>
-                  </div>
-                  {student.average_score > 0 && (
-                    <div className={`flex items-center gap-1 text-xs font-medium ${getScoreColor(student.average_score)}`}>
-                      <TrendingUp className="w-3 h-3" />
-                      <span>{student.average_score}% promedio</span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-1 text-xs text-gray-600"><BookOpen className="w-3 h-3" /><span>{student.total_enrollments} cursos</span></div>
+                  <div className="flex items-center gap-1 text-xs text-gray-600"><Award className="w-3 h-3" /><span>{student.total_certificates} certificados</span></div>
+                  {student.average_score > 0 && <div className={`flex items-center gap-1 text-xs font-medium ${getScoreColor(student.average_score)}`}><TrendingUp className="w-3 h-3" /><span>{student.average_score}% promedio</span></div>}
                 </div>
 
-                <Button
-                  variant="ghost" size="sm"
-                  className="mt-2 h-7 text-xs text-primary p-0"
-                  onClick={() => openStudent(student)}
-                >
+                <Button variant="ghost" size="sm" className="mt-2 h-7 text-xs text-primary p-0" onClick={() => openStudent(student)}>
                   {selectedStudent?.id === student.id ? "Ocultar detalle ▲" : "Ver progreso ▼"}
                 </Button>
 
-                {/* Progreso expandido */}
                 {selectedStudent?.id === student.id && (
                   <div className="mt-3 pt-3 border-t border-gray-100">
                     {loadingProgress ? (
@@ -359,29 +255,21 @@ export default function AdminStudents() {
                             <div key={en.course_id} className="bg-gray-50 rounded-lg p-3">
                               <div className="flex items-start justify-between mb-1">
                                 <p className="text-xs font-medium text-gray-900 flex-1 mr-2">{en.course_title}</p>
-                                {en.best_score !== null && (
-                                  <span className={`text-xs font-bold flex-shrink-0 ${getScoreColor(en.best_score)}`}>{en.best_score}%</span>
-                                )}
+                                {en.best_score !== null && <span className={`text-xs font-bold flex-shrink-0 ${getScoreColor(en.best_score)}`}>{en.best_score}%</span>}
                               </div>
                               <div className="flex items-center gap-2 mb-1">
-                                <div className="flex-1 bg-gray-200 rounded-full h-1.5">
-                                  <div className="bg-primary h-1.5 rounded-full" style={{ width: `${pct}%` }} />
-                                </div>
+                                <div className="flex-1 bg-gray-200 rounded-full h-1.5"><div className="bg-primary h-1.5 rounded-full" style={{ width: `${pct}%` }} /></div>
                                 <span className="text-xs text-gray-500 flex-shrink-0">{en.completed_modules}/{en.total_modules} módulos</span>
                               </div>
                               <div className="flex items-center gap-3 text-xs text-gray-500">
                                 <span>{en.attempt_count} intento{en.attempt_count !== 1 ? "s" : ""}</span>
-                                {en.certificate_number && (
-                                  <span className="text-green-600 font-medium">✓ {en.certificate_number}</span>
-                                )}
+                                {en.certificate_number && <span className="text-green-600 font-medium">✓ {en.certificate_number}</span>}
                               </div>
                             </div>
                           );
                         })}
                       </div>
-                    ) : (
-                      <p className="text-xs text-gray-500 text-center py-2">Sin cursos inscritos</p>
-                    )}
+                    ) : <p className="text-xs text-gray-500 text-center py-2">Sin cursos inscritos</p>}
                   </div>
                 )}
               </div>
@@ -392,10 +280,9 @@ export default function AdminStudents() {
         {filtered.length === 0 && (
           <div className="text-center py-16 text-gray-500">
             <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p className="mb-4">{searchQuery ? "No se encontraron usuarios" : "No hay estudiantes registrados"}</p>
+            <p className="mb-4">{searchQuery ? "No se encontraron estudiantes" : "No hay estudiantes registrados"}</p>
             <Button className="bg-primary" onClick={() => setShowCreateModal(true)}>
-              <UserPlus className="w-4 h-4 mr-2" />
-              Agregar primer usuario
+              <UserPlus className="w-4 h-4 mr-2" /> Agregar primer estudiante
             </Button>
           </div>
         )}
@@ -403,4 +290,3 @@ export default function AdminStudents() {
     </div>
   );
 }
-

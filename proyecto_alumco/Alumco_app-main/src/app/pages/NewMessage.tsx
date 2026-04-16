@@ -1,137 +1,119 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
+import React, { useState, useRef } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { ArrowLeft, Paperclip, Send, X, FileText } from "lucide-react";
 import { Button } from "../components/ui/button";
-import { Card } from "../components/ui/card";
-import { Input } from "../components/ui/input";
-import { ArrowLeft, Search, Send, Loader2 } from "lucide-react";
-import { messageService, type AvailableUser } from "../services/messageService";
-import { toast } from "sonner";
 
-export default function NewMessage() {
+const NewMessage = () => {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [users, setUsers] = useState<AvailableUser[]>([]);
-  const [selected, setSelected] = useState<AvailableUser | null>(null);
-  const [content, setContent] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Estados para el correo
+  const [destinatario, setDestinatario] = useState('');
+  const [asunto, setAsunto] = useState('');
+  const [mensaje, setMensaje] = useState('');
+  const [archivoAdjunto, setArchivoAdjunto] = useState<File | null>(null);
 
-  useEffect(() => {
-    messageService.getAvailableUsers()
-      .then(setUsers)
-      .catch(() => toast.error("Error cargando usuarios"))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const filtered = users.filter((u) =>
-    u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const getInitials = (name: string) =>
-    name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
-
-  const handleSend = async () => {
-    if (!selected || !content.trim()) { toast.error("Selecciona un destinatario y escribe un mensaje"); return; }
-    setSending(true);
-    try {
-      await messageService.send(selected.id, content.trim());
-      toast.success(`Mensaje enviado a ${selected.name}`);
-      navigate(`/chat/${selected.id}`);
-    } catch (err: any) {
-      toast.error(err.message || "Error al enviar");
-    } finally {
-      setSending(false);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setArchivoAdjunto(e.target.files[0]);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-md mx-auto px-4 py-4 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/messages")} className="text-gray-600">
+    <div className="min-h-screen bg-white font-sans text-gray-800">
+      {/* Header estilo Correo */}
+      <header className="border-b border-gray-100 px-6 py-4 flex items-center justify-between sticky top-0 bg-white">
+        <div className="flex items-center gap-4">
+          {/* CAMBIO DE SEGURIDAD: Aquí le decimos que vuelva específicamente a la mensajería del admin */}
+          <Link to="/admin/messages" className="text-gray-600 hover:text-gray-900">
             <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-xl font-semibold text-gray-900">Nuevo Mensaje</h1>
-          </div>
+          </Link>
+          <h1 className="text-xl font-bold text-slate-800">Nuevo Correo</h1>
         </div>
+        <Button 
+          className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6 gap-2"
+          onClick={() => {
+            alert('Enviando mensaje con archivos...');
+            navigate("/admin/messages"); // Te devuelve al panel de mensajes
+          }}
+        >
+          <Send className="w-4 h-4" />
+          Enviar
+        </Button>
       </header>
 
-      <div className="max-w-md mx-auto p-4 space-y-4">
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input
-            type="text"
-            placeholder="Buscar usuarios..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-gray-50 border-gray-200"
+      <main className="max-w-3xl mx-auto p-6 space-y-4">
+        {/* Campo: Para */}
+        <div className="flex items-center border-b border-gray-100 py-4">
+          <span className="text-gray-400 w-16 text-sm">Para:</span>
+          <input 
+            type="text" 
+            placeholder="Seleccionar destinatario..."
+            className="flex-1 outline-none text-sm"
+            value={destinatario}
+            onChange={(e) => setDestinatario(e.target.value)}
           />
         </div>
 
-        {/* Selected user */}
-        {selected && (
-          <Card className="p-4 bg-blue-50 border-blue-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                  <span className="text-white font-semibold text-sm">{getInitials(selected.name)}</span>
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">{selected.name}</p>
-                  <p className="text-xs text-gray-500">{selected.role}</p>
-                </div>
+        {/* Campo: Asunto */}
+        <div className="flex items-center border-b border-gray-100 py-4">
+          <span className="text-gray-400 w-16 text-sm">Asunto:</span>
+          <input 
+            type="text" 
+            placeholder="Asunto del mensaje"
+            className="flex-1 outline-none font-semibold text-slate-800"
+            value={asunto}
+            onChange={(e) => setAsunto(e.target.value)}
+          />
+        </div>
+
+        {/* Cuerpo del Correo */}
+        <textarea 
+          placeholder="Escribe tu mensaje aquí..."
+          className="w-full h-80 mt-4 outline-none resize-none text-sm leading-relaxed"
+          value={mensaje}
+          onChange={(e) => setMensaje(e.target.value)}
+        />
+
+        {/* Muestra el archivo si seleccionaste uno */}
+        {archivoAdjunto && (
+          <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <FileText className="text-blue-600" />
+              <div>
+                <p className="text-sm font-bold text-blue-900">{archivoAdjunto.name}</p>
+                <p className="text-xs text-blue-500 uppercase">{(archivoAdjunto.size / (1024*1024)).toFixed(2)} MB</p>
               </div>
-              <Button size="sm" variant="ghost" onClick={() => setSelected(null)} className="text-gray-500">✕</Button>
             </div>
-          </Card>
-        )}
-
-        {/* User list */}
-        {!selected && (
-          loading ? (
-            <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
-          ) : (
-            <div className="space-y-2">
-              {filtered.map((u) => (
-                <Card key={u.id} className="p-3 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setSelected(u)}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
-                      <span className="text-white font-semibold text-sm">{getInitials(u.name)}</span>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900 text-sm">{u.name}</p>
-                      <p className="text-xs text-gray-500">{u.email}</p>
-                    </div>
-                    <span className="ml-auto text-xs px-2 py-1 bg-blue-50 text-primary rounded-full">{u.role}</span>
-                  </div>
-                </Card>
-              ))}
-              {filtered.length === 0 && (
-                <p className="text-center text-gray-500 py-8">No se encontraron usuarios</p>
-              )}
-            </div>
-          )
-        )}
-
-        {/* Message input */}
-        {selected && (
-          <div className="space-y-3">
-            <Input
-              placeholder="Escribe tu mensaje..."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="bg-gray-50"
-            />
-            <Button className="w-full h-12 bg-primary hover:bg-blue-600" onClick={handleSend} disabled={sending || !content.trim()}>
-              {sending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-              Enviar Mensaje
-            </Button>
+            <button onClick={() => setArchivoAdjunto(null)} className="text-blue-400 hover:text-red-500">
+              <X className="w-5 h-5" />
+            </button>
           </div>
         )}
-      </div>
+
+        {/* Botonera inferior */}
+        <div className="pt-6 border-t border-gray-50 flex items-center gap-4">
+          <input 
+            type="file" 
+            className="hidden" 
+            ref={fileInputRef} 
+            onChange={handleFileChange}
+          />
+          <Button 
+            variant="outline" 
+            className="rounded-full border-gray-200 text-gray-500 gap-2"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Paperclip className="w-4 h-4" />
+            Adjuntar documentos
+          </Button>
+          <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">
+            Soporta PDF, ZIP y Videos pesados
+          </span>
+        </div>
+      </main>
     </div>
   );
-}
+};
+
+export default NewMessage;

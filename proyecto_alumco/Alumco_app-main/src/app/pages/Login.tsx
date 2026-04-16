@@ -22,13 +22,16 @@ export default function Login() {
     try {
       const user = await login(email, password);
       toast.success(`¡Bienvenido, ${user.name}!`);
+      
+      // AQUÍ ESTÁ LA MAGIA ARREGLADA 🪄
       if (user.role === "admin") {
         navigate("/admin");
       } else if (user.role === "teacher") {
-        navigate("/admin");
+        navigate("/teacher"); // <-- ¡Ahora el profesor va a su propio panel!
       } else {
-        navigate("/dashboard");
+        navigate("/dashboard"); // Los estudiantes van aquí
       }
+      
     } catch (err: any) {
       toast.error(err.message || "Credenciales incorrectas");
     } finally {
