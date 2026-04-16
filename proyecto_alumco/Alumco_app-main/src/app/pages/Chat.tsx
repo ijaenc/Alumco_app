@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { ArrowLeft, Send, Circle, Loader2, FileText, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Send, Circle, Loader2, FileText, Image as ImageIcon, Paperclip, X } from "lucide-react";
 import { messageService, type Message } from "../services/messageService";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "sonner";
@@ -11,12 +11,17 @@ export default function Chat() {
   const navigate = useNavigate();
   const { id: peerId } = useParams();
   const { user } = useAuth();
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [messages, setMessages] = useState<Message[]>([]);
   const [peerName, setPeerName] = useState("...");
   const [peerRole, setPeerRole] = useState("");
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,13 +46,21 @@ export default function Chat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
   const handleSend = async () => {
-    if (!newMessage.trim() || !peerId) return;
+    if ((!newMessage.trim() && !selectedFile) || !peerId) return;
     setSending(true);
     try {
-      const msg = await messageService.send(peerId, newMessage.trim());
+      const textToSend = newMessage.trim() || (selectedFile ? `Archivo adjunto: ${selectedFile.name}` : "");
+      const msg = await messageService.send(peerId, textToSend);
       setMessages((prev) => [...prev, msg]);
       setNewMessage("");
+      setSelectedFile(null); 
     } catch (err: any) {
       toast.error(err.message || "Error al enviar el mensaje");
     } finally {
@@ -81,7 +94,7 @@ export default function Chat() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     );
   }
@@ -92,7 +105,7 @@ export default function Chat() {
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-md mx-auto px-4 py-3">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/messages")} className="text-gray-600">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/admin/messages")} className="text-gray-600">
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -137,13 +150,14 @@ export default function Chat() {
                           </div>
                         )}
                         <div>
-                          <div className={`rounded-2xl px-4 py-2.5 ${isOwn ? "bg-primary text-white rounded-br-md" : "bg-white text-gray-900 shadow-sm rounded-bl-md"}`}>
+                          {/* ESTA ES LA LÍNEA MÁGICA DE LOS COLORES */}
+                          <div className={`rounded-2xl px-4 py-2.5 ${isOwn ? "bg-blue-600 text-white rounded-br-md shadow-md shadow-blue-200/50" : "bg-white text-gray-900 shadow-sm rounded-bl-md"}`}>
                             <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
                             {message.attachments && message.attachments.length > 0 && (
                               <div className="mt-2 space-y-1">
                                 {message.attachments.map((att) => (
-                                  <div key={att.id} className={`flex items-center gap-2 p-2 rounded-lg ${isOwn ? "bg-blue-600" : "bg-gray-100"}`}>
-                                    <FileText className={`w-4 h-4 ${isOwn ? "text-white" : "text-primary"}`} />
+                                  <div key={att.id} className={`flex items-center gap-2 p-2 rounded-lg ${isOwn ? "bg-blue-700" : "bg-gray-100"}`}>
+                                    <FileText className={`w-4 h-4 ${isOwn ? "text-white" : "text-blue-600"}`} />
                                     <span className={`text-xs truncate ${isOwn ? "text-white" : "text-gray-900"}`}>{att.file_name}</span>
                                   </div>
                                 ))}
@@ -152,7 +166,7 @@ export default function Chat() {
                           </div>
                           <div className={`flex items-center gap-1 mt-1 px-1 ${isOwn ? "justify-end" : "justify-start"}`}>
                             <span className="text-xs text-gray-500">{message.sent_at ? formatTime(message.sent_at) : ""}</span>
-                            {isOwn && message.read && <span className="text-xs text-gray-500">· Leído</span>}
+                            {isOwn && message.read && <span className="text-xs text-blue-500 font-medium">· Leído</span>}
                           </div>
                         </div>
                       </div>
@@ -171,10 +185,47 @@ export default function Chat() {
         </div>
       </div>
 
-      {/* Input */}
+      {/* Input con opción de archivos adjuntos */}
       <div className="bg-white border-t border-gray-200 sticky bottom-0">
         <div className="max-w-md mx-auto px-4 py-3">
+          
+          {selectedFile && (
+            <div className="mb-3 flex items-center justify-between p-2 bg-blue-50 rounded-lg border border-blue-100 animate-in fade-in">
+              <div className="flex items-center gap-2 overflow-hidden">
+                <FileText className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-gray-900 truncate">{selectedFile.name}</p>
+                  <p className="text-[10px] text-gray-500">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-gray-400 hover:text-red-500"
+                onClick={() => setSelectedFile(null)}
+              >
+                <X className="w-3 h-3" />
+              </Button>
+            </div>
+          )}
+
           <div className="flex items-end gap-2">
+            <input 
+              type="file" 
+              className="hidden" 
+              ref={fileInputRef} 
+              onChange={handleFileChange} 
+            />
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-gray-400 hover:text-blue-600 flex-shrink-0 h-10 w-10 rounded-full"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Paperclip className="w-5 h-5" />
+            </Button>
+
             <div className="flex-1">
               <Input
                 type="text"
@@ -188,8 +239,8 @@ export default function Chat() {
             <Button
               size="icon"
               onClick={handleSend}
-              disabled={!newMessage.trim() || sending}
-              className="rounded-full bg-primary hover:bg-blue-600 disabled:bg-gray-300 h-10 w-10 flex-shrink-0"
+              disabled={(!newMessage.trim() && !selectedFile) || sending}
+              className="rounded-full bg-blue-600 hover:bg-blue-700 text-white disabled:bg-gray-300 h-10 w-10 flex-shrink-0"
             >
               {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </Button>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react"; // Agregamos useRef
 import { useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
@@ -7,7 +7,8 @@ import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import {
-  ArrowLeft, Search, MessageCircle, Users, Send, Loader2,
+  ArrowLeft, Search, MessageCircle, Users, Send, Loader2, 
+  Paperclip, FileText, X // Agregamos iconos para archivos
 } from "lucide-react";
 import { messageService, type Conversation } from "../services/messageService";
 import { adminService, type StudentSummary } from "../services/adminService";
@@ -15,6 +16,7 @@ import { toast } from "sonner";
 
 export default function AdminMessages() {
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null); // Referencia para el input de archivo
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("conversations");
   const [massMessageContent, setMassMessageContent] = useState("");
@@ -23,6 +25,7 @@ export default function AdminMessages() {
   const [allUsers, setAllUsers] = useState<StudentSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null); // Estado para el archivo
 
   useEffect(() => {
     Promise.all([
@@ -58,6 +61,13 @@ export default function AdminMessages() {
     }
   };
 
+  // Manejador de archivos
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
   const handleSendMassMessage = async () => {
     if (!massMessageContent.trim() || selectedUsers.length === 0) {
       toast.error("Completa todos los campos", { description: "Selecciona usuarios y escribe un mensaje" });
@@ -76,6 +86,7 @@ export default function AdminMessages() {
       toast.success(`Mensaje enviado a ${ok} usuario${ok !== 1 ? "s" : ""}`, { description: "El mensaje ha sido entregado exitosamente" });
       setMassMessageContent("");
       setSelectedUsers([]);
+      setSelectedFile(null); // Limpiamos el archivo al enviar
     } else {
       toast.error("Error al enviar los mensajes");
     }
@@ -255,6 +266,48 @@ export default function AdminMessages() {
                 onChange={(e) => setMassMessageContent(e.target.value)}
                 className="min-h-[200px] bg-white border-gray-200 resize-none mb-2"
               />
+              
+              {/* --- SECCIÓN DE ARCHIVO ADJUNTO --- */}
+              <div className="mt-2 mb-4">
+                <input 
+                  type="file" 
+                  className="hidden" 
+                  ref={fileInputRef} 
+                  onChange={handleFileChange} 
+                />
+                
+                {selectedFile ? (
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 animate-in fade-in">
+                    <div className="flex items-center gap-3">
+                      <FileText className="w-5 h-5 text-primary" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 truncate max-w-[200px]">{selectedFile.name}</p>
+                        <p className="text-[10px] text-gray-500 uppercase">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                      </div>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8 text-gray-400 hover:text-red-500"
+                      onClick={() => setSelectedFile(null)}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full border-dashed border-gray-300 text-gray-500 hover:bg-gray-50 gap-2"
+                  >
+                    <Paperclip className="w-4 h-4" />
+                    Adjuntar archivo pesado (PDF, ZIP, Video)
+                  </Button>
+                )}
+              </div>
+              {/* --------------------------------- */}
+
               <p className="text-xs text-gray-500 mb-4">{massMessageContent.length} caracteres</p>
               <Button
                 onClick={handleSendMassMessage}
@@ -271,4 +324,3 @@ export default function AdminMessages() {
     </div>
   );
 }
-
